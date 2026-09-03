@@ -29,7 +29,7 @@ class ReleaseLensRetriever(BaseRetriever):
             query_vector=query_vector,
             limit=self.top_k,
             document_type=self.document_type,
-            # service=self.service,
+            service=self.service,
         )
 
         documents = []
