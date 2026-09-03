@@ -1,16 +1,28 @@
 from langchain_core.documents import Document
-from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnableLambda
 from langchain_openai import ChatOpenAI
 
-from backend.app.rag.prompts import RELEASE_ANALYSIS_PROMPT
-from backend.app.retrieval.factory import create_retriever
+from backend.app.models.release_analysis import (
+    ReleaseAnalysis,
+)
+
+from backend.app.rag.prompts import (
+    RELEASE_ANALYSIS_PROMPT,
+)
+
+from backend.app.retrieval.factory import (
+    create_retriever,
+)
 
 
-def format_documents(documents: list[Document]) -> str:
+def format_documents(
+    documents: list[Document],
+) -> str:
 
     if not documents:
-        return "No relevant engineering evidence was retrieved."
+        return (
+            "No relevant engineering evidence was retrieved."
+        )
 
     formatted_documents = []
 
@@ -64,6 +76,10 @@ def create_rag_chain():
         temperature=0,
     )
 
+    structured_model = model.with_structured_output(
+        ReleaseAnalysis
+    )
+
     chain = (
         {
             "context": (
@@ -78,8 +94,7 @@ def create_rag_chain():
             ),
         }
         | RELEASE_ANALYSIS_PROMPT
-        | model
-        | StrOutputParser()
+        | structured_model
     )
 
     return chain
