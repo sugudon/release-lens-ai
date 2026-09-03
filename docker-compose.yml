@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: release-lens-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: release_lens
+      POSTGRES_USER: release_lens
+      POSTGRES_PASSWORD: release_lens_password
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U release_lens -d release_lens"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+volumes:
+  postgres_data:
