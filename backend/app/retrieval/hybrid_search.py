@@ -9,7 +9,7 @@ from backend.app.ingestion.embeddings import embed_query
 
 def hybrid_search(
     query: str,
-    limit: int = 5,
+    limit: int = 20,
     document_type: str | None = None,
     service: str | None = None,
 ):
