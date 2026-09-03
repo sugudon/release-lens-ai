@@ -12,6 +12,7 @@ pgvector
 
 langchain
 langchain-openai
+langchain-community
 langsmith
 
 openai
