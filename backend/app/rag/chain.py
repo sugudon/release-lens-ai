@@ -14,12 +14,21 @@ from backend.app.retrieval.factory import (
     create_retriever,
 )
 
+from backend.app.retrieval.query_processor import (
+    process_query,
+)
+
 
 # =========================================================
 # Configuration
 # =========================================================
 
-RETRIEVAL_SCORE_THRESHOLD = 0.75
+# IMPORTANT:
+# This value is currently not used for filtering here.
+# Filtering is handled by the retriever.
+#
+# Keep threshold configuration in one place:
+# backend/app/retrieval/factory.py / retriever.py
 
 
 # =========================================================
@@ -61,13 +70,15 @@ def format_documents(
             "UNKNOWN",
         )
 
-        similarity_score = metadata.get(
-            "similarity_score"
+        # Your retriever currently provides
+        # "distance", not "similarity_score".
+        distance = metadata.get(
+            "distance"
         )
 
-        score_text = (
-            f"{similarity_score:.4f}"
-            if isinstance(similarity_score, (int, float))
+        distance_text = (
+            f"{distance:.4f}"
+            if isinstance(distance, (int, float))
             else "UNKNOWN"
         )
 
@@ -78,7 +89,7 @@ document_id: {document_id}
 document_type: {document_type}
 service: {service}
 source: {source}
-similarity_score: {score_text}
+distance: {distance_text}
 
 content:
 {document.page_content}
@@ -96,44 +107,47 @@ content:
 def assess_retrieval(
     documents: list[Document],
 ) -> tuple[bool, str, list[Document]]:
-    """
-    Determine whether the retrieved documents provide
-    sufficient evidence for the LLM.
 
-    Returns:
-        sufficient_evidence
-        reason
-        filtered_documents
+    """
+    Determine whether the retriever returned
+    usable engineering evidence.
+
+    The similarity threshold itself is already
+    handled inside ReleaseLensRetriever.
+
+    Therefore this function checks whether
+    usable documents remain after retrieval.
     """
 
     if not documents:
 
         return (
             False,
-            "No engineering evidence was retrieved.",
+            "No relevant engineering evidence was retrieved.",
             [],
         )
 
-    scored_documents = []
+    valid_documents = []
 
     for document in documents:
 
-        score = document.metadata.get(
-            "similarity_score"
+        distance = document.metadata.get(
+            "distance"
         )
 
-        if isinstance(score, (int, float)):
+        if isinstance(distance, (int, float)):
 
-            if score >= RETRIEVAL_SCORE_THRESHOLD:
-                scored_documents.append(document)
+            valid_documents.append(
+                document
+            )
 
-    if not scored_documents:
+    if not valid_documents:
 
         return (
             False,
             (
-                "Retrieved documents did not meet the "
-                "minimum relevance threshold."
+                "Retrieved documents did not contain "
+                "valid similarity information."
             ),
             [],
         )
@@ -141,7 +155,7 @@ def assess_retrieval(
     return (
         True,
         "Sufficient relevant evidence was retrieved.",
-        scored_documents,
+        valid_documents,
     )
 
 
@@ -227,20 +241,43 @@ def create_rag_chain():
     )
 
     # -----------------------------------------------------
-    # Retrieval + Assessment
+    # Query Processing + Retrieval
     # -----------------------------------------------------
 
     def retrieve_and_assess(
         inputs: dict,
     ) -> dict:
 
+        # ---------------------------------------------
+        # Original user request
+        # ---------------------------------------------
+
         release_description = inputs[
             "release_description"
         ]
 
-        documents = retriever.invoke(
+        # ---------------------------------------------
+        # Phase 12:
+        # Convert user query into a retrieval-oriented
+        # query while preserving the original request.
+        # ---------------------------------------------
+
+        processed_query = process_query(
             release_description
         )
+
+        # ---------------------------------------------
+        # IMPORTANT:
+        # Use ONLY retrieval_query for vector search.
+        # ---------------------------------------------
+
+        documents = retriever.invoke(
+            processed_query.retrieval_query
+        )
+
+        # ---------------------------------------------
+        # Assess retrieved evidence
+        # ---------------------------------------------
 
         (
             sufficient_evidence,
@@ -251,12 +288,24 @@ def create_rag_chain():
         )
 
         return {
+
+            # Original user request
             "release_description":
                 release_description,
 
+            # Internal retrieval query
+            "retrieval_query":
+                processed_query.retrieval_query,
+
+            # Concepts generated by query processor
+            "query_concepts":
+                processed_query.concepts,
+
+            # Retrieved documents
             "documents":
                 relevant_documents,
 
+            # Evidence assessment
             "sufficient_evidence":
                 sufficient_evidence,
 
@@ -301,11 +350,17 @@ def create_rag_chain():
         # -------------------------------------------------
 
         prompt_input = {
+
+            # IMPORTANT:
+            # The LLM receives the ORIGINAL request,
+            # not the rewritten retrieval query.
             "release_description":
                 retrieval_result[
                     "release_description"
                 ],
 
+            # The LLM receives actual retrieved
+            # engineering evidence.
             "context":
                 context,
         }
@@ -345,11 +400,14 @@ def create_rag_chain():
                 evidence.document_id
                 in retrieved_document_ids
             ):
+
                 validated_evidence.append(
                     evidence
                 )
 
-        result.evidence = validated_evidence
+        result.evidence = (
+            validated_evidence
+        )
 
         # -------------------------------------------------
         # Final Grounding Check
