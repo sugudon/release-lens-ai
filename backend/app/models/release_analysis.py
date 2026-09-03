@@ -37,6 +37,10 @@ class ReleaseAnalysis(BaseModel):
         default_factory=list
     )
 
+    recommended_actions: list[str] = Field(
+        default_factory=list
+    )
+
     evidence: list[EvidenceItem] = Field(
         default_factory=list
     )
