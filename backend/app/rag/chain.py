@@ -28,22 +28,24 @@ def format_documents(
 
     for document in documents:
 
-        document_id = document.metadata.get(
+        metadata = document.metadata
+
+        document_id = metadata.get(
             "document_id",
             "UNKNOWN",
         )
 
-        document_type = document.metadata.get(
+        document_type = metadata.get(
             "document_type",
             "UNKNOWN",
         )
 
-        service = document.metadata.get(
+        service = metadata.get(
             "service",
             "UNKNOWN",
         )
 
-        source = document.metadata.get(
+        source = metadata.get(
             "source",
             "UNKNOWN",
         )
@@ -63,7 +65,6 @@ content:
         )
 
     return "\n".join(formatted_documents)
-
 
 def create_rag_chain():
 

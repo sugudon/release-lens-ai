@@ -53,7 +53,22 @@ def main():
 
     print("\nEvidence:")
     for evidence in result.evidence:
-        print(f"- {evidence}")
+
+        print(
+            f"- {evidence.document_id}"
+        )
+
+        print(
+            f"  Type: {evidence.document_type}"
+        )
+
+        print(
+            f"  Source: {evidence.source}"
+        )
+
+        print(
+            f"  Claim: {evidence.claim}"
+        )
 
     print("\nConfidence:")
     print(result.confidence)

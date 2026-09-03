@@ -2,9 +2,18 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from backend.app.models.evidence import EvidenceItem
+
 
 class ReleaseAnalysis(BaseModel):
-    risk_level: Literal["low", "medium", "high", "critical", "unknown"]
+
+    risk_level: Literal[
+        "low",
+        "medium",
+        "high",
+        "critical",
+        "unknown",
+    ]
 
     summary: str
 
@@ -28,11 +37,15 @@ class ReleaseAnalysis(BaseModel):
         default_factory=list
     )
 
-    evidence: list[str] = Field(
+    evidence: list[EvidenceItem] = Field(
         default_factory=list
     )
 
-    confidence: Literal["low", "medium", "high"]
+    confidence: Literal[
+        "low",
+        "medium",
+        "high",
+    ]
 
     uncertainty: list[str] = Field(
         default_factory=list
