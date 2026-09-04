@@ -17,6 +17,14 @@ def main():
     result = chain.invoke(
         {
             "release_description": release_description
+        },
+        config={
+            "run_name": "Release Risk Analysis",
+            "tags": ["release_analysis", "rag"],
+            "metadata": {
+                "application": "release-lens-ai",
+                "workflow": "release-risk-analysis",
+            }
         }
     )
 
