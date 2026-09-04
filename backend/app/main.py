@@ -4,12 +4,16 @@ from pydantic import BaseModel
 from .config import settings
 from .llm.release_chain import chain
 
+from backend.app.api.routes.releases import router as releases_router
+
 
 app = FastAPI(
     title=settings.app_name,
-    version="0.2.0",
+    description=settings.app_description,
+    version=settings.app_version,
 )
 
+app.include_router(releases_router)
 
 class ReleaseSummaryRequest(BaseModel):
     release_description: str
@@ -18,6 +22,12 @@ class ReleaseSummaryRequest(BaseModel):
 class ReleaseSummaryResponse(BaseModel):
     release_summary: str
 
+
+@app.get("/")
+def root():
+    return {
+        "message": "ReleaseLens AI API is running"
+    }
 
 @app.get("/health")
 def health_check():
