@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-
+from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .llm.release_chain import chain
 
@@ -14,6 +14,16 @@ app = FastAPI(
 )
 
 app.include_router(releases_router)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class ReleaseSummaryRequest(BaseModel):
     release_description: str
